@@ -147721,10 +147721,10 @@ msgid ""
 msgstr "[StreamPeerTCP]的初始状态。这也是断开连接后的状态。"
 
 msgid "A status representing a [StreamPeerTCP] that is connecting to a host."
-msgstr "表示正在连接到主机的 [StreamPeerTCP] 的状态。"
+msgstr "表示连接到主机的 [StreamPeerTCP] 的状态。"
 
 msgid "A status representing a [StreamPeerTCP] that is connected to a host."
-msgstr "表示已连接到主机的 [StreamPeerTCP] 的状态。"
+msgstr "表示连接到主机的 [StreamPeerTCP] 的状态。"
 
 msgid "A status representing a [StreamPeerTCP] in error state."
 msgstr "表示处于错误状态的 [StreamPeerTCP] 的状态。"
