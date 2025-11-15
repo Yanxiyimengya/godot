@@ -32,7 +32,7 @@
 
 #include "scene/main/viewport.h"
 #include "scene/resources/theme.h"
-#include "servers/display_server.h"
+#include "servers/display/display_server.h"
 
 class Font;
 class Shortcut;
@@ -170,6 +170,8 @@ private:
 	bool _try_parent_dialog(Node *p_from_node);
 
 	Size2i max_size_used;
+
+	Rect2i nonclient_area;
 
 	Size2i _clamp_limit_size(const Size2i &p_limit_size);
 	Size2i _clamp_window_size(const Size2i &p_size);
@@ -332,6 +334,8 @@ public:
 	void set_flag(Flags p_flag, bool p_enabled);
 	bool get_flag(Flags p_flag) const;
 
+	bool is_popup() const;
+
 	bool is_maximize_allowed() const;
 
 	void request_attention();
@@ -389,6 +393,9 @@ public:
 	void set_content_scale_factor(real_t p_factor);
 	real_t get_content_scale_factor() const;
 
+	void set_nonclient_area(const Rect2i &p_rect);
+	Rect2i get_nonclient_area() const;
+
 	void set_mouse_passthrough_polygon(const Vector<Vector2> &p_region);
 	Vector<Vector2> get_mouse_passthrough_polygon() const;
 
@@ -399,6 +406,7 @@ public:
 	Window *get_exclusive_child() const { return exclusive_child; }
 	HashSet<Window *> get_transient_children() const { return transient_children; }
 	Window *get_parent_visible_window() const;
+	Window *get_non_popup_window() const;
 	Viewport *get_parent_viewport() const;
 
 	virtual void popup(const Rect2i &p_screen_rect = Rect2i());

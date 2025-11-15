@@ -35,12 +35,14 @@
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/extension/gdextension.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access_encrypted.h"
 #include "core/io/file_access_pack.h" // PACK_HEADER_MAGIC, PACK_FORMAT_VERSION
+#include "core/io/image.h"
 #include "core/io/image_loader.h"
 #include "core/io/resource_uid.h"
-#include "core/io/zip_io.h"
 #include "core/math/random_pcg.h"
+#include "core/os/shared_object.h"
 #include "core/version.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
@@ -51,8 +53,10 @@
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "editor_export_plugin.h"
-#include "scene/resources/image_texture.h"
+#include "scene/gui/rich_text_label.h"
+#include "scene/main/node.h"
 #include "scene/resources/packed_scene.h"
+#include "scene/resources/texture.h"
 
 class EditorExportSaveProxy {
 	HashSet<String> saved_paths;
@@ -84,7 +88,7 @@ static int _get_pad(int p_alignment, int p_n) {
 	return pad;
 }
 
-#define PCK_PADDING 16
+static constexpr int PCK_PADDING = 16;
 
 Ref<Image> EditorExportPlatform::_load_icon_or_splash_image(const String &p_path, Error *r_error) const {
 	Ref<Image> image;
@@ -311,11 +315,7 @@ Error EditorExportPlatform::_save_pack_file(void *p_userdata, const String &p_pa
 
 	PackData *pd = (PackData *)p_userdata;
 
-	String simplified_path = p_path.simplify_path();
-	if (simplified_path.begins_with("uid://")) {
-		simplified_path = ResourceUID::uid_to_path(simplified_path).simplify_path();
-		print_verbose(vformat(R"(UID referenced exported file name "%s" was replaced with "%s".)", p_path, simplified_path));
-	}
+	const String simplified_path = simplify_path(p_path);
 
 	Ref<FileAccess> ftmp;
 	if (pd->use_sparse_pck) {
@@ -374,13 +374,7 @@ Error EditorExportPlatform::_save_pack_patch_file(void *p_userdata, const String
 Error EditorExportPlatform::_save_zip_file(void *p_userdata, const String &p_path, const Vector<uint8_t> &p_data, int p_file, int p_total, const Vector<String> &p_enc_in_filters, const Vector<String> &p_enc_ex_filters, const Vector<uint8_t> &p_key, uint64_t p_seed) {
 	ERR_FAIL_COND_V_MSG(p_total < 1, ERR_PARAMETER_RANGE_ERROR, "Must select at least one file to export.");
 
-	String path = p_path.simplify_path();
-	if (path.begins_with("uid://")) {
-		path = ResourceUID::uid_to_path(path).simplify_path();
-		print_verbose(vformat(R"(UID referenced exported file name "%s" was replaced with "%s".)", p_path, path));
-	}
-
-	path = path.replace_first("res://", "");
+	const String path = simplify_path(p_path).replace_first("res://", "");
 
 	ZipData *zd = (ZipData *)p_userdata;
 
@@ -677,7 +671,7 @@ bool EditorExportPlatform::_export_customize_dictionary(Dictionary &dict, LocalV
 					}
 
 					// If it was not replaced, go through and see if there is something to replace.
-					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins), true) {
+					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins)) {
 						changed = true;
 					}
 				}
@@ -724,7 +718,7 @@ bool EditorExportPlatform::_export_customize_array(Array &arr, LocalVector<Ref<E
 					}
 
 					// If it was not replaced, go through and see if there is something to replace.
-					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins), true) {
+					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins)) {
 						changed = true;
 					}
 				}
@@ -771,7 +765,7 @@ bool EditorExportPlatform::_export_customize_object(Object *p_object, LocalVecto
 					}
 
 					// If it was not replaced, go through and see if there is something to replace.
-					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins), true) {
+					if (res.is_valid() && !res->get_path().is_resource_file() && _export_customize_object(res.ptr(), customize_resources_plugins)) {
 						changed = true;
 					}
 				}
@@ -780,16 +774,20 @@ bool EditorExportPlatform::_export_customize_object(Object *p_object, LocalVecto
 			case Variant::DICTIONARY: {
 				Dictionary d = p_object->get(E.name);
 				if (_export_customize_dictionary(d, customize_resources_plugins)) {
-					// May have been generated, so set back just in case
-					p_object->set(E.name, d);
+					if (p_object->get(E.name) != d) {
+						p_object->set(E.name, d);
+					}
+
 					changed = true;
 				}
 			} break;
 			case Variant::ARRAY: {
 				Array a = p_object->get(E.name);
 				if (_export_customize_array(a, customize_resources_plugins)) {
-					// May have been generated, so set back just in case
-					p_object->set(E.name, a);
+					if (p_object->get(E.name) != a) {
+						p_object->set(E.name, a);
+					}
+
 					changed = true;
 				}
 			} break;
@@ -1042,11 +1040,7 @@ Error EditorExportPlatform::_script_save_file(void *p_userdata, const String &p_
 	Callable cb = ((ScriptCallbackData *)p_userdata)->file_cb;
 	ERR_FAIL_COND_V(!cb.is_valid(), FAILED);
 
-	String simplified_path = p_path.simplify_path();
-	if (simplified_path.begins_with("uid://")) {
-		simplified_path = ResourceUID::uid_to_path(simplified_path).simplify_path();
-		print_verbose(vformat(R"(UID referenced exported file name "%s" was replaced with "%s".)", p_path, simplified_path));
-	}
+	const String simplified_path = simplify_path(p_path);
 
 	Variant path = simplified_path;
 	Variant data = p_data;
@@ -1345,6 +1339,8 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 		}
 
 		bool do_export = true;
+		bool skip_all = false;
+		int skipped_i = export_plugins.size() - 1;
 		for (int i = 0; i < export_plugins.size(); i++) {
 			if (GDVIRTUAL_IS_OVERRIDDEN_PTR(export_plugins[i], _export_file)) {
 				export_plugins.write[i]->_export_file_script(path, type, features_psa);
@@ -1360,26 +1356,30 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 				}
 			}
 
-			for (int j = 0; j < export_plugins[i]->extra_files.size(); j++) {
-				err = save_proxy.save_file(p_udata, export_plugins[i]->extra_files[j].path, export_plugins[i]->extra_files[j].data, idx, total, enc_in_filters, enc_ex_filters, key, seed);
-				if (err != OK) {
-					return err;
-				}
-				if (export_plugins[i]->extra_files[j].remap) {
-					do_export = false; // If remap, do not.
-					path_remaps.push_back(path);
-					path_remaps.push_back(export_plugins[i]->extra_files[j].path);
-				}
-			}
-
 			if (export_plugins[i]->skipped) {
 				do_export = false;
-			}
-			export_plugins.write[i]->_clear();
-
-			if (!do_export) {
+				skip_all = true;
+				skipped_i = i;
 				break;
 			}
+		}
+
+		for (int i = 0; i <= skipped_i; i++) {
+			if (!skip_all) {
+				for (const EditorExportPlugin::ExtraFile &extra_file : export_plugins[i]->extra_files) {
+					err = save_proxy.save_file(p_udata, extra_file.path, extra_file.data, idx, total, enc_in_filters, enc_ex_filters, key, seed);
+					if (err != OK) {
+						return err;
+					}
+					if (extra_file.remap) {
+						do_export = false; // If remap, do not.
+						path_remaps.push_back(path);
+						path_remaps.push_back(extra_file.path);
+					}
+				}
+			}
+
+			export_plugins.write[i]->_clear();
 		}
 		if (!do_export) {
 			continue;
@@ -1511,7 +1511,7 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 			// Just store it as it comes.
 
 			// Customization only happens if plugins did not take care of it before.
-			bool force_binary = convert_text_to_binary && (path.get_extension().to_lower() == "tres" || path.get_extension().to_lower() == "tscn");
+			bool force_binary = convert_text_to_binary && (path.has_extension("tres") || path.has_extension("tscn"));
 			String export_path = _export_customize(path, customize_resources_plugins, customize_scenes_plugins, export_cache, export_base_path, force_binary);
 
 			if (export_path != path) {
@@ -2484,6 +2484,16 @@ Array EditorExportPlatform::get_current_presets() const {
 	return ret;
 }
 
+String EditorExportPlatform::simplify_path(const String &p_path) {
+	if (p_path.begins_with("uid://")) {
+		const String path = ResourceUID::uid_to_path(p_path);
+		print_verbose(vformat(R"(UID-referenced exported file name "%s" was replaced with "%s".)", p_path, path));
+		return path.simplify_path();
+	} else {
+		return p_path.simplify_path();
+	}
+}
+
 Variant EditorExportPlatform::get_project_setting(const Ref<EditorExportPreset> &p_preset, const StringName &p_name) {
 	if (p_preset.is_valid()) {
 		return p_preset->get_project_setting(p_name);
@@ -2530,7 +2540,7 @@ void EditorExportPlatform::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_internal_export_files", "preset", "debug"), &EditorExportPlatform::get_internal_export_files);
 
-	ClassDB::bind_static_method("EditorExportPlatform", D_METHOD("get_forced_export_files", "preset"), &EditorExportPlatform::get_forced_export_files);
+	ClassDB::bind_static_method("EditorExportPlatform", D_METHOD("get_forced_export_files", "preset"), &EditorExportPlatform::get_forced_export_files, DEFVAL(Ref<EditorExportPreset>()));
 
 	BIND_ENUM_CONSTANT(EXPORT_MESSAGE_NONE);
 	BIND_ENUM_CONSTANT(EXPORT_MESSAGE_INFO);

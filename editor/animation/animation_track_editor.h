@@ -566,6 +566,8 @@ class AnimationTrackEditGroup : public Control {
 	AnimationTimelineEdit *timeline = nullptr;
 	AnimationTrackEditor *editor = nullptr;
 
+	bool hovered = false;
+
 	void _zoom_changed();
 
 protected:
@@ -603,7 +605,10 @@ class AnimationTrackEditor : public VBoxContainer {
 	AnimationBezierTrackEdit *bezier_edit = nullptr;
 	VBoxContainer *timeline_vbox = nullptr;
 
+	VBoxContainer *info_message_vbox = nullptr;
 	Label *info_message = nullptr;
+	Button *add_animation_player = nullptr;
+	void _add_animation_player();
 
 	AnimationTimelineEdit *timeline = nullptr;
 	AnimationMarkerEdit *marker_edit = nullptr;
@@ -613,6 +618,7 @@ class AnimationTrackEditor : public VBoxContainer {
 	Label *nearest_fps_label = nullptr;
 	TextureRect *zoom_icon = nullptr;
 	Button *snap_keys = nullptr;
+	Button *insert_at_current_time = nullptr;
 	Button *snap_timeline = nullptr;
 	Button *bezier_edit_icon = nullptr;
 	OptionButton *snap_mode = nullptr;
@@ -826,6 +832,8 @@ class AnimationTrackEditor : public VBoxContainer {
 	void _auto_fit();
 	void _auto_fit_bezier();
 
+	void _root_node_changed(Node *p_node, bool p_removed);
+	void _scene_changed();
 	void _selection_changed();
 
 	ConfirmationDialog *track_copy_dialog = nullptr;
@@ -917,7 +925,9 @@ public:
 		EDIT_OPTIMIZE_ANIMATION,
 		EDIT_OPTIMIZE_ANIMATION_CONFIRM,
 		EDIT_CLEAN_UP_ANIMATION,
-		EDIT_CLEAN_UP_ANIMATION_CONFIRM
+		EDIT_CLEAN_UP_ANIMATION_CONFIRM,
+		EDIT_GOTO_NEXT_KEYFRAME,
+		EDIT_GOTO_PREV_KEYFRAME,
 	};
 
 	void add_track_edit_plugin(const Ref<AnimationTrackEditPlugin> &p_plugin);
@@ -954,6 +964,8 @@ public:
 	bool is_moving_selection() const;
 	bool is_snap_timeline_enabled() const;
 	bool is_snap_keys_enabled() const;
+	bool is_insert_at_current_time_enabled() const;
+	void resolve_insertion_offset(float &r_offset) const;
 	bool is_bezier_editor_active() const;
 	bool can_add_reset_key() const;
 	void _on_filter_updated(const String &p_filter);

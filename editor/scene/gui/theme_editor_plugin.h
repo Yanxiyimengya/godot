@@ -440,8 +440,12 @@ class ThemeEditor : public VBoxContainer {
 
 	Ref<Theme> theme;
 
+	Button *theme_edit_button = nullptr;
+	Button *theme_close_button = nullptr;
+
 	TabBar *preview_tabs = nullptr;
 	PanelContainer *preview_tabs_content = nullptr;
+	Control *add_preview_button_ph = nullptr;
 	Button *add_preview_button = nullptr;
 	EditorFileDialog *preview_scene_dialog = nullptr;
 
@@ -454,6 +458,9 @@ class ThemeEditor : public VBoxContainer {
 	void _theme_edit_button_cbk();
 	void _theme_close_button_cbk();
 	void _scene_closed(const String &p_path);
+	void _resource_saved(const Ref<Resource> &p_resource);
+	void _files_moved(const String &p_old_path, const String &p_new_path);
+	void _update_theme_name(const String &p_name);
 
 	void _add_preview_button_cbk();
 	void _preview_scene_dialog_cbk(const String &p_path);
@@ -463,6 +470,7 @@ class ThemeEditor : public VBoxContainer {
 	void _remove_preview_tab_invalid(Node *p_tab_control);
 	void _update_preview_tab(Node *p_tab_control);
 	void _preview_control_picked(String p_class_name);
+	void _preview_tabs_resized();
 
 protected:
 	void _notification(int p_what);

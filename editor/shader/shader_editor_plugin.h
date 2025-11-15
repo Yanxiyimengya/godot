@@ -83,13 +83,11 @@ class ShaderEditorPlugin : public EditorPlugin {
 
 	VBoxContainer *main_container = nullptr;
 	HSplitContainer *files_split = nullptr;
-	HBoxContainer *menu_hb = nullptr;
-	Control *menu_spacer = nullptr;
 
 	ItemList *shader_list = nullptr;
 	TabContainer *shader_tabs = nullptr;
+	HBoxContainer *empty_menu = nullptr;
 
-	Button *button = nullptr;
 	MenuButton *file_menu = nullptr;
 	PopupMenu *context_menu = nullptr;
 
@@ -150,4 +148,5 @@ public:
 	virtual void apply_changes() override;
 
 	ShaderEditorPlugin();
+	~ShaderEditorPlugin();
 };

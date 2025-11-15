@@ -415,6 +415,7 @@ typedef enum {
 	GDEXTENSION_METHOD_FLAG_VIRTUAL = 8,
 	GDEXTENSION_METHOD_FLAG_VARARG = 16,
 	GDEXTENSION_METHOD_FLAG_STATIC = 32,
+	GDEXTENSION_METHOD_FLAG_VIRTUAL_REQUIRED = 128,
 	GDEXTENSION_METHOD_FLAGS_DEFAULT = GDEXTENSION_METHOD_FLAG_NORMAL,
 } GDExtensionClassMethodFlags;
 
@@ -858,6 +859,7 @@ typedef void (*GDExtensionInterfaceGetGodotVersion2)(GDExtensionGodotVersion2 *r
 /**
  * @name mem_alloc
  * @since 4.1
+ * @deprecated in Godot 4.6. Use `mem_alloc2` instead.
  *
  * Allocates memory.
  *
@@ -870,6 +872,7 @@ typedef void *(*GDExtensionInterfaceMemAlloc)(size_t p_bytes);
 /**
  * @name mem_realloc
  * @since 4.1
+ * @deprecated in Godot 4.6. Use `mem_realloc2` instead.
  *
  * Reallocates memory.
  *
@@ -883,6 +886,7 @@ typedef void *(*GDExtensionInterfaceMemRealloc)(void *p_ptr, size_t p_bytes);
 /**
  * @name mem_free
  * @since 4.1
+ * @deprecated in Godot 4.6. Use `mem_free2` instead.
  *
  * Frees memory.
  *
@@ -890,7 +894,45 @@ typedef void *(*GDExtensionInterfaceMemRealloc)(void *p_ptr, size_t p_bytes);
  */
 typedef void (*GDExtensionInterfaceMemFree)(void *p_ptr);
 
-/* INTERFACE: Godot Core */
+/**
+ * @name mem_alloc2
+ * @since 4.6
+ *
+ * Allocates memory.
+ *
+ * @param p_bytes The amount of memory to allocate in bytes.
+ * @param p_pad_align If true, the returned memory will have prepadding of at least 8 bytes.
+ *
+ * @return A pointer to the allocated memory, or NULL if unsuccessful.
+ */
+typedef void *(*GDExtensionInterfaceMemAlloc2)(size_t p_bytes, GDExtensionBool p_pad_align);
+
+/**
+ * @name mem_realloc2
+ * @since 4.6
+ *
+ * Reallocates memory.
+ *
+ * @param p_ptr A pointer to the previously allocated memory.
+ * @param p_bytes The number of bytes to resize the memory block to.
+ * @param p_pad_align If true, the returned memory will have prepadding of at least 8 bytes.
+ *
+ * @return A pointer to the allocated memory, or NULL if unsuccessful.
+ */
+typedef void *(*GDExtensionInterfaceMemRealloc2)(void *p_ptr, size_t p_bytes, GDExtensionBool p_pad_align);
+
+/**
+ * @name mem_free2
+ * @since 4.6
+ *
+ * Frees memory.
+ *
+ * @param p_ptr A pointer to the previously allocated memory.
+ * @param p_pad_align If true, the given memory was allocated with prepadding.
+ */
+typedef void (*GDExtensionInterfaceMemFree2)(void *p_ptr, GDExtensionBool p_pad_align);
+
+//* INTERFACE: Godot Core */
 
 /**
  * @name print_error
@@ -2938,7 +2980,7 @@ typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass2)(GDExtensionCl
  * @param p_library A pointer the library received by the GDExtension's entry point function.
  * @param p_class_name A pointer to a StringName with the class name.
  * @param p_parent_class_name A pointer to a StringName with the parent class name.
- * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo2 struct.
+ * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo3 struct.
  */
 typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass3)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, const GDExtensionClassCreationInfo3 *p_extension_funcs);
 
@@ -2954,7 +2996,7 @@ typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass3)(GDExtensionCl
  * @param p_library A pointer the library received by the GDExtension's entry point function.
  * @param p_class_name A pointer to a StringName with the class name.
  * @param p_parent_class_name A pointer to a StringName with the parent class name.
- * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo2 struct.
+ * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo4 struct.
  */
 typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass4)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, const GDExtensionClassCreationInfo4 *p_extension_funcs);
 
@@ -2969,7 +3011,7 @@ typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass4)(GDExtensionCl
  * @param p_library A pointer the library received by the GDExtension's entry point function.
  * @param p_class_name A pointer to a StringName with the class name.
  * @param p_parent_class_name A pointer to a StringName with the parent class name.
- * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo2 struct.
+ * @param p_extension_funcs A pointer to a GDExtensionClassCreationInfo5 struct.
  */
 typedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass5)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, const GDExtensionClassCreationInfo5 *p_extension_funcs);
 
